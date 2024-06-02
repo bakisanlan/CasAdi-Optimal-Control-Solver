@@ -1,5 +1,5 @@
 clc;
-addpath('C:\Users\PC_4236\Desktop\old_pc\downloads\casadi-3.6.3-windows64-matlab2018b')
+%addpath('C:\Users\PC_4236\Desktop\old_pc\downloads\casadi-3.6.3-windows64-matlab2018b')
 
 %% plotting path of aicraft 3D
 figure(1)
@@ -150,11 +150,18 @@ fprintf('T final = %f s \n ',opti.debug.value(T))
 fprintf('Total fuel consumpion = %f \n ',(m0 - opti.debug.value(m(end))))
 
 %% Saving optimal output as inital guess
-
+opti_pos_x = opti.debug.value(pos_x);
 opti_pos_y =  opti.debug.value(pos_y);
 opti_pos_h =  opti.debug.value(pos_h);
 opti_V =  opti.debug.value(V);
 opti_psi =  opti.debug.value(psi);
 opti_m =  opti.debug.value(m);
+
+opti_inputs = [opti.debug.value(path_ang) ; opti.debug.value(bank_ang) ; opti.debug.value(thrt)];
+opti_U = opti_inputs;
 opti_X = [opti_pos_x ; opti_pos_y ; opti_pos_h ; opti_V ; opti_psi ; opti_m];
+
+opt_sol.opti_U = opti_U;
+opt_sol.opti_X = opti_X;
+opt_sol.T = opti.debug.value(T);
 
