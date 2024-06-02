@@ -1,7 +1,7 @@
 clc;clear;
 addpath('C:\Users\user\Downloads\casadi-3.6.5-windows64-matlab2018b')
 
-scenario = 1;
+scenario = 2;
 
 switch scenario
 
@@ -16,9 +16,9 @@ switch scenario
         lla_final = [40 32 8000];
 
     case 2
-        N = 3200;
-        lla0 = [55 30 7000];
-        V0 = 220;
+        N = 1000;
+        lla0 = [55 30 0];
+        V0 = 100;
         h0 = lla0(3);
         psi0 = deg2rad(40);
         m0 = 67e3;
@@ -32,7 +32,7 @@ switch scenario
         m0 = 65e3;
         lla_final = [45 5 7000];
 end
-
+%%
 
 % xyzNED_final = lla2ned(lla_final,lla0,"flat");
 % pos_x_final = xyzNED_final(1);
@@ -83,11 +83,11 @@ for i=1:N+1
     lla_i = lla2ned2([pos_x(i) pos_y(i)],lla0);
     lla = [lla ; lla_i(1) lla_i(2)];
 end
-h_lim = [0.5e4 1.5e4];
+h_lim = [0 1.5e4];
 opti.subject_to(lat_lim(1) < lla(:,1) < lat_lim(2));
 opti.subject_to(lon_lim(1) < lla(:,2) < lon_lim(2)); 
 opti.subject_to(h_lim(1) < pos_h < h_lim(2));
-opti.subject_to(100 <= V <= 400);
+opti.subject_to(0 <= V <= 400);
 opti.subject_to(m >= 1e4);
 
 % ---- input constraints -----------
@@ -104,7 +104,7 @@ opti.subject_to(lla(N+1,1)==lla_final(1));
 opti.subject_to(lla(1,2)==lla0(2));   
 opti.subject_to(lla(N+1,2)==lla_final(2)); 
 opti.subject_to(pos_h(1)==h0);   
-opti.subject_to(pos_h(N+1)==h0);   
+opti.subject_to(pos_h(N+1)==lla_final(3));   
 opti.subject_to(V(1)==V0);   
 opti.subject_to(psi(1)==psi0);   
 opti.subject_to(m(1)==m0);   
@@ -113,13 +113,25 @@ opti.subject_to(m(1)==m0);
 opti.subject_to(T>=0); % Time must be positive
 
 %---- initial values for solver ---
-tf_guess = 2.3e6/V0;  %s
+% case 1 initial guess
+%tf_guess = 11e3;
+%t = linspace(0,tf_guess,N+1);
+
+% opti.set_initial(pos_x, 0);
+% opti.set_initial(pos_y, 240*t);
+% opti.set_initial(pos_h, 12000);
+% opti.set_initial(V, 240);
+% opti.set_initial(psi, deg2rad(90));
+% opti.set_initial(m, m0);
+
+% case 2 initial guess
+tf_guess = 9e3;
 t = linspace(0,tf_guess,N+1);
-opti.set_initial(pos_x, 0);
-opti.set_initial(pos_y, 240*t);
+opti.set_initial(pos_x, 146*1.3*t);
+opti.set_initial(pos_y, 146*t);
 opti.set_initial(pos_h, 12000);
 opti.set_initial(V, 240);
-opti.set_initial(psi, deg2rad(90));
+opti.set_initial(psi, deg2rad(-135));
 opti.set_initial(m, m0);
 
 opti.set_initial(path_ang, 0);
@@ -139,7 +151,6 @@ opti.set_initial(thrt, 1);
 % opti.set_initial(bank_ang, opti_inputs(2,:));
 % opti.set_initial(thrt,     opti_inputs(3,:));
 
-tf_guess = 11e3;
 opti.set_initial(T, tf_guess);
 
 % ---- solve NLP              ------

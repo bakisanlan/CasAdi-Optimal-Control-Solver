@@ -3,7 +3,8 @@ clc;
 
 %% plotting path of aicraft 3D
 figure(1)
-        lla0 = [40 5 8000];
+lla0 = [40 5 8000];
+%lla0 = [55 30 7000];
 
 opti_pos_x = opti.debug.value(pos_x);
 opti_pos_y = opti.debug.value(pos_y);

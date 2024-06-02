@@ -2,7 +2,7 @@ clc;clear;
 addpath('C:\Users\PC_4236\Desktop\old_pc\downloads\casadi-3.6.3-windows64-matlab2018b')
 import casadi.*
 
-scenario = 1;
+scenario = 2;
 lat_lim = [35 60];
 lon_lim = [-5 35];
 h_lim = [0.5e4 1.5e4];
@@ -11,7 +11,7 @@ switch scenario
 
     case 1
         %scenerio initial and final conditions
-        N = 400;
+        N = 100;
         lla0 = [40 5 8000];
         V0 = 210;
         h0 = lla0(3);
@@ -101,15 +101,17 @@ for k=1:N % loop over control intervals
 
     Xc = opti.variable(6,d);
 
-    opti.set_initial(Xc, repmat([0;240*t(k);12000;240;deg2rad(90);m0],1,d));
-    
+    %opti.set_initial(Xc, repmat([0;240*t(k);12000;240;deg2rad(90);m0],1,d));
+    opti.set_initial(Xc, repmat([146*1.3*t(k);146*t(k);12000;240;deg2rad(-135);m0],1,d));
+
+
     for dd=1:d
-    lla_xcdk = lla2ned2([Xc(1,d) Xc(2,d)],lla0);
+    lla_xcdk = lla2ned2([Xc(1,dd) Xc(2,dd)],lla0);
     opti.subject_to(lat_lim(1) < lla_xcdk(1) < lat_lim(2));
     opti.subject_to(lon_lim(1) < lla_xcdk(2) < lon_lim(2)); 
-    opti.subject_to(h_lim(1) < Xc(3,d) < h_lim(2));
-    opti.subject_to(100 <= Xc(4,d) <= 400);
-    opti.subject_to(Xc(6,d) >= 1e4);
+    opti.subject_to(h_lim(1) < Xc(3,dd) < h_lim(2));
+    opti.subject_to(100 <= Xc(4,dd) <= 400);
+    opti.subject_to(Xc(6,dd) >= 1e4);
     end
     Xck_dot1 = f(Xc(:,1), U(:,k),lla0);
     Xck_dot2 = f(Xc(:,2), U(:,k),lla0);
@@ -156,7 +158,7 @@ opti.subject_to(lla(N+1,1)==lla_final(1));
 opti.subject_to(lla(1,2)==lla0(2));   
 opti.subject_to(lla(N+1,2)==lla_final(2)); 
 opti.subject_to(pos_h(1)==h0);   
-opti.subject_to(pos_h(N+1)==h0);   
+opti.subject_to(pos_h(N+1)==lla_final(3));   
 opti.subject_to(V(1)==V0);   
 opti.subject_to(psi(1)==psi0);   
 opti.subject_to(m(1)==m0);   
@@ -165,13 +167,27 @@ opti.subject_to(m(1)==m0);
 opti.subject_to(T>=0); % Time must be positive
 
 %---- initial values for solver ---
-tf_guess = 2.3e6/V0;  %s
+% tf_guess = 2.3e6/V0;  %s
+% t = linspace(0,tf_guess,N+1);
+% opti.set_initial(pos_x, 0);
+% opti.set_initial(pos_y, 240*t);
+% opti.set_initial(pos_h, 12000);
+% opti.set_initial(V, 240);
+% opti.set_initial(psi, deg2rad(90));
+% opti.set_initial(m, m0);
+% 
+% opti.set_initial(path_ang, 0);
+% opti.set_initial(bank_ang, 0);
+% opti.set_initial(thrt, 1);
+
+% case 2 initial guess
+tf_guess = 9e3;
 t = linspace(0,tf_guess,N+1);
-opti.set_initial(pos_x, 0);
-opti.set_initial(pos_y, 240*t);
+opti.set_initial(pos_x, 146*1.3*t);
+opti.set_initial(pos_y, 146*t);
 opti.set_initial(pos_h, 12000);
 opti.set_initial(V, 240);
-opti.set_initial(psi, deg2rad(90));
+opti.set_initial(psi, deg2rad(-135));
 opti.set_initial(m, m0);
 
 opti.set_initial(path_ang, 0);
