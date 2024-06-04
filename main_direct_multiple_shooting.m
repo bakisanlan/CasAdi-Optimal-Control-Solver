@@ -1,8 +1,7 @@
 clc;clear;
 addpath('C:\Users\user\Downloads\casadi-3.6.5-windows64-matlab2018b')
-import casadi.*
 
-scenario = 1;
+scenario =1;
 
 switch scenario
 
@@ -17,7 +16,7 @@ switch scenario
         lla_final = [40 32 8000];
 
     case 2
-        N = 3200;
+        N = 100;
         lla0 = [55 30 7000];
         V0 = 220;
         h0 = lla0(3);
@@ -33,7 +32,7 @@ switch scenario
         m0 = 65e3;
         lla_final = [45 5 7000];
 end
-
+%%
 
 % xyzNED_final = lla2ned(lla_final,lla0,"flat");
 % pos_x_final = xyzNED_final(1);
@@ -43,25 +42,13 @@ end
 opti = casadi.Opti(); % Optimization problem
 
 % ---- decision variables ---------
-% X = opti.variable(6,N+1); % state trajectory
-% pos_x = X(1,:);
-% pos_y = X(2,:);
-% pos_h = X(3,:);
-% V     = X(4,:);
-% psi   = X(5,:);
-% m     = X(6,:);
-% 
-% X = MX.sym('x',6,N+1);
-X = opti.internal_variable(6,N+1);
-
+X = opti.variable(6,N+1); % state trajectory
 pos_x = X(1,:);
 pos_y = X(2,:);
 pos_h = X(3,:);
 V     = X(4,:);
 psi   = X(5,:);
 m     = X(6,:);
-Xk = [0 ;0 ;h0 ;V0 ;psi0 ;m0];
-
 
 U = opti.variable(3,N);   % control trajectory
 path_ang = U(1,:);
@@ -71,131 +58,21 @@ thrt     = U(3,:);
 T = opti.variable();      % final time
 
 % ---- objective          ---------
-L = 0.05*T + (m0-% Import CasADi
-import casadi.*
-
-% Define the optimization problem
-T = 10; % Time horizon
-N = 100; % Number of control intervals
-
-% Declare model variables
-x1 = SX.sym('x1');
-x2 = SX.sym('x2');
-u = SX.sym('u');
-x = [x1; x2];
-n_states = length(x);
-n_controls = length(u);
-
-% Model equations
-xdot = [x2; u];
-
-% Objective term
-L = u^2;
-
-% Formulate discrete time dynamics
-M = 4; % RK4 steps per interval
-DT = T/N/M;
-f = Function('f', {x, u}, {xdot, L});
-X0 = MX.sym('X0', n_states);
-U = MX.sym('U');
-X = X0;
-Q = 0;
-for j=1:M
-    [k1, k1_q] = f(X, U);
-    [k2, k2_q] = f(X + DT/2 * k1, U);
-    [k3, k3_q] = f(X + DT/2 * k2, U);
-    [k4, k4_q] = f(X + DT * k3, U);
-    X = X + DT/6*(k1 + 2*k2 + 2*k3 + k4);
-    Q = Q + DT/6*(k1_q + 2*k2_q + 2*k3_q + k4_q);
-end
-F = Function('F', {X0, U}, {X, Q});
-
-% Start with an empty NLP
-opti = Opti();
-
-% Decision variables for state trajectory and control
-X = opti.variable(n_states, N+1);
-U = opti.variable(n_controls, N);
-
-% Parameters (initial state and reference state)
-X0 = opti.parameter(n_states, 1);
-Xref = opti.parameter(n_states, 1);
-
-% Initial condition
-opti.subject_to(X(:,1) == X0);
-
-% Build the NLP
-J = 0;
-for k=1:N
-   [xf, qf] = F(X(:,k), U(:,k));
-   opti.subject_to(X(:,k+1) == xf);
-   J = J + qf;
-end
-
-% Terminal cost
-opti.subject_to(X(:,end) == Xref);
-
-% Minimize the objective
-opti.minimize(J);
-
-% Create an NLP solver
-opts = struct;
-opts.ipopt.print_level = 0;
-opts.print_time = 0;
-opti.solver('ipopt', opts);
-
-% Initial state and reference state
-x0 = [0; 0];
-x_ref = [1; 0];
-
-% Set the initial state and reference state
-opti.set_value(X0, x0);
-opti.set_value(Xref, x_ref);
-
-% Initial guess
-opti.set_initial(X, repmat(x0, 1, N+1));
-opti.set_initial(U, zeros(n_controls, N));
-
-% Solve the NLP
-sol = opti.solve();
-
-% Extract the optimal solution
-x_opt = sol.value(X);
-u_opt = sol.value(U);
-
-% Plot the results
-figure;
-subplot(2,1,1);
-plot(linspace(0, T, N+1), x_opt(1,:), 'b', 'LineWidth', 2);
-hold on;
-plot(linspace(0, T, N+1), x_opt(2,:), 'r', 'LineWidth', 2);
-xlabel('Time [s]');
-ylabel('States');
-legend('x1', 'x2');
-title('Optimal State Trajectory');
-grid on;
-
-subplot(2,1,2);
-stairs(linspace(0, T, N), u_opt, 'k', 'LineWidth', 2);
-xlabel('Time [s]');
-ylabel('Control Input');
-title('Optimal Control Input');
-grid on;
-(end));
+L = 0.05*T + (m0-m(end));
 opti.minimize(L); % race in minimal time
 
 dt = T/N; % length of a control interval
 for k=1:N % loop over control intervals
    % Runge-Kutta 4 integration
-   k1 = f(Xk,         U(:,k),lla0);
-   k2 = f(Xk+dt/2*k1, U(:,k),lla0);
-   k3 = f(Xk+dt/2*k2, U(:,k),lla0);
-   k4 = f(Xk+dt*k3,   U(:,k),lla0);
-   Xk = Xk + dt/6*(k1+2*k2+2*k3+k4); 
+   k1 = f(X(:,k),         U(:,k),lla0);
+   k2 = f(X(:,k)+dt/2*k1, U(:,k),lla0);
+   k3 = f(X(:,k)+dt/2*k2, U(:,k),lla0);
+   k4 = f(X(:,k)+dt*k3,   U(:,k),lla0);
+   x_next = X(:,k) + dt/6*(k1+2*k2+2*k3+k4); 
 
    %euler integration
    %x_next = X(:,k) + dt*f(X(:,k), U(:,k),lla0);
-   %opti.subject_to(X(:,k+1)==x_next); % close the gaps
+   opti.subject_to(X(:,k+1)==x_next); % close the gaps
 end
 
 % ---- state constraints -----------
@@ -207,11 +84,11 @@ for i=1:N+1
     lla = [lla ; lla_i(1) lla_i(2)];
 end
 h_lim = [0.5e4 1.5e4];
-opti.internal_subject_to(lat_lim(1) < lla(:,1) < lat_lim(2));
-opti.internal_subject_to(lon_lim(1) < lla(:,2) < lon_lim(2)); 
-opti.internal_subject_to(h_lim(1) < pos_h < h_lim(2));
-opti.internal_subject_to(100 <= V <= 400);
-opti.internal_subject_to(m >= 1e4);
+opti.subject_to(lat_lim(1) < lla(:,1) < lat_lim(2));
+opti.subject_to(lon_lim(1) < lla(:,2) < lon_lim(2)); 
+opti.subject_to(h_lim(1) < pos_h < h_lim(2));
+opti.subject_to(100 <= V <= 400);
+opti.subject_to(m >= 1e4);
 
 % ---- input constraints -----------
 path_ang_max = deg2rad(1.5);
@@ -227,7 +104,7 @@ opti.subject_to(lla(N+1,1)==lla_final(1));
 opti.subject_to(lla(1,2)==lla0(2));   
 opti.subject_to(lla(N+1,2)==lla_final(2)); 
 opti.subject_to(pos_h(1)==h0);   
-opti.subject_to(pos_h(N+1)==h0);   
+opti.subject_to(pos_h(N+1)==lla_final(3));   
 opti.subject_to(V(1)==V0);   
 opti.subject_to(psi(1)==psi0);   
 opti.subject_to(m(1)==m0);   
@@ -236,13 +113,24 @@ opti.subject_to(m(1)==m0);
 opti.subject_to(T>=0); % Time must be positive
 
 %---- initial values for solver ---
-tf_guess = 2.3e6/V0;  %s
+% case 1 initial guess
+tf_guess = 11e3;
 t = linspace(0,tf_guess,N+1);
-% opti.set_initial(pos_x, 0);
-% opti.set_initial(pos_y, 240*t);
+opti.set_initial(pos_x, 0);
+opti.set_initial(pos_y, 240*t);
+opti.set_initial(pos_h, 12000);
+opti.set_initial(V, 240);
+opti.set_initial(psi, deg2rad(90));
+opti.set_initial(m, m0);
+
+% case 2 initial guess
+% tf_guess = 9e3;
+% t = linspace(0,tf_guess,N+1);
+% opti.set_initial(pos_x, 146*1.3*t);
+% opti.set_initial(pos_y, 146*t);
 % opti.set_initial(pos_h, 12000);
 % opti.set_initial(V, 240);
-% opti.set_initial(psi, deg2rad(90));
+% opti.set_initial(psi, deg2rad(-135));
 % opti.set_initial(m, m0);
 
 opti.set_initial(path_ang, 0);
@@ -262,7 +150,6 @@ opti.set_initial(thrt, 1);
 % opti.set_initial(bank_ang, opti_inputs(2,:));
 % opti.set_initial(thrt,     opti_inputs(3,:));
 
-tf_guess = 11e3;
 opti.set_initial(T, tf_guess);
 
 % ---- solve NLP              ------
@@ -271,8 +158,20 @@ s_opts = struct('max_iter',10000);
 opti.solver('ipopt',p_opts,s_opts); % set numerical backend
 sol = opti.solve();   % actual solve
 
-
-
+%%
+% dt = opti.debug.value(T)/N;
+% x_opt = [0; 0; h0; V0; psi0; m0];
+% t = linspace(0,opti.debug.value(T),N+1);
+% u_opt = [opti.debug.value(path_ang) ; opti.debug.value(bank_ang) ; opti.debug.value(thrt)];
+% for k=1:N
+%     % Integrate till the end of the interval
+%     k1 = f(x_opt(:,end),          u_opt(:,k),lla0);
+%     k2 = f(x_opt(:,end)+ dt/2*k1, u_opt(:,k),lla0);
+%     k3 = f(x_opt(:,end)+ dt/2*k2, u_opt(:,k),lla0);
+%     k4 = f(x_opt(:,end)+ dt*k3,   u_opt(:,k),lla0);
+%     x_opt = [x_opt x_opt(:,end) + dt/6*(k1+2*k2+2*k3+k4)];
+% end
+% 
 
 
 

@@ -1,5 +1,5 @@
-clc;clear;
-addpath('C:\Users\user\Downloads\casadi-3.6.5-windows64-matlab2018b')
+clc;
+addpath('C:\Users\b_san\Downloads\casadi-3.6.5-windows64-matlab2018b')
 
 scenario = 2;
 
@@ -7,7 +7,7 @@ switch scenario
 
     case 1
         %scenerio initial and final conditions
-        N = 1000;
+        N = 100;
         lla0 = [40 5 8000];
         V0 = 210;
         h0 = lla0(3);
@@ -16,9 +16,9 @@ switch scenario
         lla_final = [40 32 8000];
 
     case 2
-        N = 1000;
-        lla0 = [55 30 0];
-        V0 = 100;
+        N = 200;
+        lla0 = [55 30 7000];
+        V0 = 220;
         h0 = lla0(3);
         psi0 = deg2rad(40);
         m0 = 67e3;
@@ -42,13 +42,9 @@ end
 opti = casadi.Opti(); % Optimization problem
 
 % ---- decision variables ---------
-X = opti.variable(6,N+1); % state trajectory
-pos_x = X(1,:);
-pos_y = X(2,:);
-pos_h = X(3,:);
-V     = X(4,:);
-psi   = X(5,:);
-m     = X(6,:);
+%X = opti.variable(6); % state trajectory
+X = [0; 0; h0; V0; psi0; m0];
+X_vec = [];
 
 U = opti.variable(3,N);   % control trajectory
 path_ang = U(1,:);
@@ -57,37 +53,49 @@ thrt     = U(3,:);
 
 T = opti.variable();      % final time
 
-% ---- objective          ---------
-L = 0.05*T + (m0-m(end));
-opti.minimize(L); % race in minimal time
 
 dt = T/N; % length of a control interval
 for k=1:N % loop over control intervals
    % Runge-Kutta 4 integration
-   k1 = f(X(:,k),         U(:,k),lla0);
-   k2 = f(X(:,k)+dt/2*k1, U(:,k),lla0);
-   k3 = f(X(:,k)+dt/2*k2, U(:,k),lla0);
-   k4 = f(X(:,k)+dt*k3,   U(:,k),lla0);
-   x_next = X(:,k) + dt/6*(k1+2*k2+2*k3+k4); 
+   k1 = f(X,         U(:,k),lla0);
+   k2 = f(X+dt/2*k1, U(:,k),lla0);
+   k3 = f(X+dt/2*k2, U(:,k),lla0);
+   k4 = f(X+dt*k3,   U(:,k),lla0);
+
+   X_vec = [X_vec    X + dt/6*(k1+2*k2+2*k3+k4)]; 
+   X = X + dt/6*(k1+2*k2+2*k3+k4);
 
    %euler integration
    %x_next = X(:,k) + dt*f(X(:,k), U(:,k),lla0);
-   opti.subject_to(X(:,k+1)==x_next); % close the gaps
+   %opti.subject_to(X(:,k+1)==x_next); % close the gaps
 end
 
+pos_x = X_vec(1,:);
+pos_y = X_vec(2,:);
+pos_h = X_vec(3,:);
+V     = X_vec(4,:);
+psi   = X_vec(5,:);
+m     = X_vec(6,:);
+
+
+% ---- objective          ---------
+L = 0.05*T + (m0-m(end));
+opti.minimize(L); % race in minimal time
+
+%%
 % ---- state constraints -----------
 lat_lim = [35 60];
 lon_lim = [-5 35];
 lla = [];
-for i=1:N+1
+for i=1:N
     lla_i = lla2ned2([pos_x(i) pos_y(i)],lla0);
     lla = [lla ; lla_i(1) lla_i(2)];
 end
-h_lim = [0 1.5e4];
+h_lim = [0.5e4 1.5e4];
 opti.subject_to(lat_lim(1) < lla(:,1) < lat_lim(2));
 opti.subject_to(lon_lim(1) < lla(:,2) < lon_lim(2)); 
 opti.subject_to(h_lim(1) < pos_h < h_lim(2));
-opti.subject_to(0 <= V <= 400);
+opti.subject_to(100 <= V <= 400);
 opti.subject_to(m >= 1e4);
 
 % ---- input constraints -----------
@@ -99,23 +107,23 @@ opti.subject_to(-bank_ang_max <= bank_ang <= bank_ang_max);
 opti.subject_to(thrt_lim(1) <= thrt <= thrt_lim(2));
 
 % ---- boundary conditions --------
-opti.subject_to(lla(1,1)==lla0(1));   
-opti.subject_to(lla(N+1,1)==lla_final(1));   
-opti.subject_to(lla(1,2)==lla0(2));   
-opti.subject_to(lla(N+1,2)==lla_final(2)); 
-opti.subject_to(pos_h(1)==h0);   
-opti.subject_to(pos_h(N+1)==lla_final(3));   
-opti.subject_to(V(1)==V0);   
-opti.subject_to(psi(1)==psi0);   
-opti.subject_to(m(1)==m0);   
+%opti.subject_to(lla(1,1)==lla0(1));   
+opti.subject_to(lla(N,1)==lla_final(1));   
+%opti.subject_to(lla(1,2)==lla0(2));   
+opti.subject_to(lla(N,2)==lla_final(2)); 
+%opti.subject_to(pos_h(1)==h0);   
+opti.subject_to(pos_h(N)==lla_final(3));   
+%opti.subject_to(V(1)==V0);   
+%opti.subject_to(psi(1)==psi0);   
+%opti.subject_to(m(1)==m0);   
 
 % ---- misc. constraints  ----------
 opti.subject_to(T>=0); % Time must be positive
 
 %---- initial values for solver ---
 % case 1 initial guess
-%tf_guess = 11e3;
-%t = linspace(0,tf_guess,N+1);
+tf_guess = 9e3;
+t = linspace(0,tf_guess,N+1);
 
 % opti.set_initial(pos_x, 0);
 % opti.set_initial(pos_y, 240*t);
@@ -125,18 +133,22 @@ opti.subject_to(T>=0); % Time must be positive
 % opti.set_initial(m, m0);
 
 % case 2 initial guess
-tf_guess = 9e3;
-t = linspace(0,tf_guess,N+1);
-opti.set_initial(pos_x, 146*1.3*t);
-opti.set_initial(pos_y, 146*t);
-opti.set_initial(pos_h, 12000);
-opti.set_initial(V, 240);
-opti.set_initial(psi, deg2rad(-135));
-opti.set_initial(m, m0);
+% tf_guess = 9e3;
+% t = linspace(0,tf_guess,N+1);
+% opti.set_initial(pos_x, 146*1.3*t);
+% opti.set_initial(pos_y, 146*t);
+% opti.set_initial(pos_h, 12000);
+% opti.set_initial(V, 240);
+% opti.set_initial(psi, deg2rad(-135));
+% opti.set_initial(m, m0);
 
 opti.set_initial(path_ang, 0);
 opti.set_initial(bank_ang, 0);
 opti.set_initial(thrt, 1);
+
+% opti.set_initial(path_ang, u_opt(1,:));
+% opti.set_initial(bank_ang, u_opt(2,:));
+% opti.set_initial(thrt, u_opt(3,:));
 
 % % setting initial guess for x and input with optimal solution
 % load('opti_guess_sc1_800N.mat');

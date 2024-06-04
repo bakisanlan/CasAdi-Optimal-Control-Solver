@@ -166,3 +166,23 @@ opt_sol.opti_U = opti_U;
 opt_sol.opti_X = opti_X;
 opt_sol.T = opti.debug.value(T);
 
+%%
+x_opt = [0; 0; h0; V0; psi0; m0];
+u_opt = [opti.debug.value(path_ang) ; opti.debug.value(bank_ang) ; opti.debug.value(thrt)];
+dt = opti.debug.value(T) / N;
+for k=1:N
+    % Integrate till the end of the interval
+    k1 = f(x_opt(:,end),         u_opt(:,k),lla0);
+    k2 = f(x_opt(:,end)+dt/2*k1, u_opt(:,k),lla0);
+    k3 = f(x_opt(:,end)+dt/2*k2, u_opt(:,k),lla0);
+    k4 = f(x_opt(:,end)+dt*k3,   u_opt(:,k),lla0);
+    x_opt = [x_opt x_opt(:,end) + dt/6*(k1+2*k2+2*k3+k4)];
+end
+
+opti_inputs = [opti.debug.value(path_ang) ; opti.debug.value(bank_ang) ; opti.debug.value(thrt)];
+opti_U = opti_inputs;
+opti_X = x_opt;
+
+opt_sol.opti_U = opti_U;
+opt_sol.opti_X = opti_X;
+opt_sol.T = opti.debug.value(T);

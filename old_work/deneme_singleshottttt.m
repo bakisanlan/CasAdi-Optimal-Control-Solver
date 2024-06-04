@@ -114,7 +114,7 @@ w0 = [w0; tf_guess];
 L = 0.05*T + (m0 - Xk(end));
 
 options = struct;
-options.ipopt.max_iter = 1000;
+options.ipopt.max_iter = 10000;
 options.ipopt.print_level = 5;
 options.ipopt.tol = 1e-6;
 options.ipopt.constr_viol_tol = 1e-4;
@@ -144,7 +144,7 @@ for k=1:N
 end
 
 %%
-clc;close all
+%clc;close all
 %addpath('C:\Users\PC_4236\Desktop\old_pc\downloads\casadi-3.6.3-windows64-matlab2018b')
 
 %% plotting path of aicraft 3D
