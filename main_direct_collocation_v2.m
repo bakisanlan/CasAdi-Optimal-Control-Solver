@@ -71,7 +71,7 @@ opti.minimize(L); % race in minimal time
 %Xc = {};
 t = linspace(0,2.3e6/V0,N+1);
 
-h = T/N; % length of a control interval
+dt = T/N; % length of a control interval
 for k=1:N % loop over control intervals
 
     % Xc{k} = opti.variable(6, d);
@@ -121,9 +121,9 @@ for k=1:N % loop over control intervals
 
     Pidot = Z*C;
 
-    opti.subject_to(Pidot(:,1) == h*Xck_dot1);    
-    opti.subject_to(Pidot(:,2) == h*Xck_dot2);
-    opti.subject_to(Pidot(:,3) == h*Xck_dot3);
+    opti.subject_to(Pidot(:,1) == dt*Xck_dot1);    
+    opti.subject_to(Pidot(:,2) == dt*Xck_dot2);
+    opti.subject_to(Pidot(:,3) == dt*Xck_dot3);
 
     Xk_end = Z*D;
 

@@ -185,19 +185,19 @@ fprintf(' Cost function value = %f \n ',L)
 fprintf('T final = %f s \n ',opti_T)
 fprintf('Total fuel consumpion = %f \n ',(m0 - opti_m(end)))
 
-%% Saving optimal output as inital guess
-opti_pos_x = opti.debug.value(pos_x);
-opti_pos_y =  opti.debug.value(pos_y);
-opti_pos_h =  opti.debug.value(pos_h);
-opti_V =  opti.debug.value(V);
-opti_psi =  opti.debug.value(psi);
-opti_m =  opti.debug.value(m);
-
-opti_inputs = [opti.debug.value(path_ang) ; opti.debug.value(bank_ang) ; opti.debug.value(thrt)];
-opti_U = opti_inputs;
-opti_X = [opti_pos_x ; opti_pos_y ; opti_pos_h ; opti_V ; opti_psi ; opti_m];
-
-opt_sol.opti_U = opti_U;
-opt_sol.opti_X = opti_X;
-opt_sol.T = opti.debug.value(T);
+% %% Saving optimal output as inital guess
+% opti_pos_x = opti.debug.value(pos_x);
+% opti_pos_y =  opti.debug.value(pos_y);
+% opti_pos_h =  opti.debug.value(pos_h);
+% opti_V =  opti.debug.value(V);
+% opti_psi =  opti.debug.value(psi);
+% opti_m =  opti.debug.value(m);
+% 
+% opti_inputs = [opti.debug.value(path_ang) ; opti.debug.value(bank_ang) ; opti.debug.value(thrt)];
+% opti_U = opti_inputs;
+% opti_X = [opti_pos_x ; opti_pos_y ; opti_pos_h ; opti_V ; opti_psi ; opti_m];
+% 
+% opt_sol.opti_U = opti_U;
+% opt_sol.opti_X = opti_X;
+% opt_sol.T = opti.debug.value(T);
 
